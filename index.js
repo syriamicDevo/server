@@ -1,4 +1,6 @@
 const login = require('fca-unofficial')
+const express = require('express')
+const app = express()
 const fs = require('fs')
 const appState = JSON.parse(fs.readFileSync('./cookie.json', 'utf8'))
 function confess(message, from, to, event, api){
@@ -118,6 +120,10 @@ function getGUID() {
   });
   return id;
 }
+app.get('/', (req, res) => {
+  res.send("Hello;)")
+})
+app.listen(process.env.PORT)
 login({appState}, (err, api) => {
   if (err) return;
   api.listenMqtt((err, event) => {
