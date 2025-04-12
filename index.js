@@ -124,7 +124,7 @@ app.get("/createPlayer", (req, res) => {
   const filePath = path.join(DATABASE_DIR, `${uid}.json`);
   fs.writeFileSync(filePath, JSON.stringify(playerData, null, 2));
 
-  res.redirect(`/getInfo/${uid}`);
+  res.redirect(`/getInfo?keycard=${keycard}`);
 });
 
 // Start server
