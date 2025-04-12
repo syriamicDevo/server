@@ -1,143 +1,134 @@
-const login = require('fca-unofficial')
-const express = require('express')
-const app = express()
-const fs = require('fs')
-const appState = JSON.parse(fs.readFileSync('./cookie.json', 'utf8'))
-function confess(message, from, to, event, api){
-  let count = parseInt(fs.readFileSync(__dirname +'/count','utf8'))|| 0
-  const { threadID, messageID, senderID } = event;
-  count += 1
-  fs.writeFileSync('count', count.toString())
-  const text = message
-  const sender = from
-  const receiver = to
-    const uuid = getGUID();
-  const formData = {
-    "input": {
-      "composer_entry_point": "inline_composer",
-      "composer_source_surface": "timeline",
-      "idempotence_token": uuid + "_FEED",
-      "source": "WWW",
-      "attachments": [],
-      "audience": {
-        "privacy": {
-          "allow": [],
-          "base_state": "EVERYONE", // SELF EVERYONE
-          "deny": [],
-          "tag_expansion_state": "UNSPECIFIED"
-        }
-      },
-      "message": {
-        "ranges": [],
-        "text": `󰟫╭ Confession Post #${count}
-\nજ⁀➴: ${receiver}\n\n󰥴 : ${message}\n\n
-⁀: ${sender}
-━━━━━━━━━━━━━━━━━━━━━`
-      },
-      "with_tags_ids": [],
-      "inline_activities": [],
-      "explicit_place_id": "0",
-      "text_format_preset_id": "0",
-      "logging": {
-        "composer_session_id": uuid
-      },
-      "tracking": [
-        null
-      ],
-      "actor_id": api.getCurrentUserID(),
-      "client_mutation_id": Math.floor(Math.random()*17)
-    },
-    "displayCommentsFeedbackContext": null,
-    "displayCommentsContextEnableComment": null,
-    "displayCommentsContextIsAdPreview": null,
-    "displayCommentsContextIsAggregatedShare": null,
-    "displayCommentsContextIsStorySet": null,
-    "feedLocation": "TIMELINE",
-    "feedbackSource": 0,
-    "focusCommentID": null,
-    "gridMediaWidth": 230,
-    "groupID": null,
-    "scale": 3,
-    "privacySelectorRenderLocation": "COMET_STREAM",
-    "renderLocation": "timeline",
-    "useDefaultActor": false,
-    "inviteShortLinkKey": null,
-    "isFeed": false,
-    "isFundraiser": false,
-    "isFunFactPost": false,
-    "isGroup": false,
-    "isTimeline": true,
-    "isSocialLearning": false,
-    "isPageNewsFeed": false,
-    "isProfileReviews": false,
-    "isWorkSharedDraft": false,
-    "UFI2CommentsProvider_commentsKey": "ProfileCometTimelineRoute",
-    "hashtag": null,
-    "canUserManageOffers": false
-  };
-  try {
-    const results = createPost(api, formData)
-    return api.sendMessage(`𝐏𝐨𝐬𝐭𝐞𝐝 𝐒𝐮𝐜𝐜𝐞𝐬𝐬𝐟𝐮𝐥𝐥𝐲!\n𝙿𝚘𝚜𝚝: ${results})`, event.senderID)
-  } catch (e) {
-    api.sendMessage(e, event.senderID)
+const fs = require('fs');
+const path = require('path');
+const express = require('express');
+const app = express();
+const { exec } = require('child_process');
+
+// Restart function
+function scheduleRestart() {
+  setTimeout(() => {
+    console.log("Restarting the app...");
+    exec('node index.js'); // Re-run the app
+    process.exit(); // Kill the current instance
+  }, 14 * 60 * 1000); // 14 minutes
+}
+
+
+const DATABASE_DIR = path.join(__dirname, 'database', 'players');
+
+// Ensure database folder exists
+if (!fs.existsSync(DATABASE_DIR)) {
+  fs.mkdirSync(DATABASE_DIR, { recursive: true });
+}
+
+// Utility: Load all players from the file system safely
+function loadAllPlayers() {
+  const files = fs.readdirSync(DATABASE_DIR);
+  const players = [];
+
+  for (const file of files) {
+    const filePath = path.join(DATABASE_DIR, file);
+    try {
+      const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+      players.push(data);
+    } catch (err) {
+      console.error(`Error reading or parsing ${filePath}`, err);
+    }
   }
 
-}
-async function createPost(api, formData) {
-  return new Promise((resolve, reject) => {
-    const form = {
-      av: api.getCurrentUserID(),
-      fb_api_req_friendly_name: "ComposerStoryCreateMutation",
-      fb_api_caller_class: "RelayModern",
-      doc_id: "7711610262190099",
-      variables: JSON.stringify(formData)
-    };
-
-    api.httpPost('https://www.facebook.com/api/graphql/', form, (error, result) => {
-      if (error) {
-        reject(error);
-      } else {
-        try {
-          const responseData = JSON.parse(result.replace("for (;;);", ""));
-          const postID = responseData.data.story_create.story.legacy_story_hideable_id;
-          const postURL = responseData.data.story_create.story.url;
-          resolve({ postID, postURL });
-        } catch (parseError) {
-          reject(parseError);
-        }
-      }
-    });
-  });
+  return players;
 }
 
-function getGUID() {
-  var sectionLength = Date.now();
-  var id = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
-    var r = Math.floor((sectionLength + Math.random() * 16) % 16);
-    sectionLength = Math.floor(sectionLength / 16);
-    var _guid = (c == "x" ? r : (r & 7) | 8).toString(16);
-    return _guid;
-  });
-  return id;
+// UID generator (based on current player count)
+function createUID() {
+  const files = fs.readdirSync(DATABASE_DIR);
+  const startsWith = "1053";
+  return (startsWith + (files.length + 1)).toString();
 }
-app.get('/', (req, res) => {
-  res.send("Hello;)")
-})
-app.listen(process.env.PORT)
-login({appState}, (err, api) => {
-  if (err) return;
-  api.listenMqtt((err, event) => {
-    if (err) return;
-    if (event.body) {
-      const args = event.body.split(/ +/)
-      if (event.body.startsWith("confess")) {
-        if (!args[1] || !args[2] || !args[3]) {
-          api.sendMessage("Error Usage.\nconfess <message> <from> <to>", event.senderID, event.messageID)
-        } else {
-          confess(args[1], args[2], args[3], event, api)
-        
-        }
-      }
+
+// Keycard generator (e.g., random 8-digit number)
+function generateKeycard() {
+  let keycard;
+  const players = loadAllPlayers();
+  const existingKeycards = new Set(players.map(p => p.keycard));
+
+  // Ensure uniqueness
+  do {
+    keycard = Math.floor(10000000 + Math.random() * 90000000).toString();
+  } while (existingKeycards.has(keycard));
+
+  return keycard;
+}
+
+// GET: Get player info by UID
+// GET: Get player info (by id or by keycard)
+app.get("/getInfo", (req, res) => {
+  const { id, keycard } = req.query;
+  const players = loadAllPlayers();
+
+  if (id) {
+    // Fetch by UID — Public access (no keycard required)
+    const player = players.find(p => p.uid === id);
+    if (!player) {
+      return res.status(404).json({ error: "Player not found with provided id" });
     }
-  })
-})
+
+    // Clone the player object and remove the keycard before sending
+    const { keycard, ...safeData } = player;
+    return res.json(safeData);
+  }
+
+  if (keycard) {
+    // Fetch by keycard — Owner access
+    const player = players.find(p => p.keycard === keycard);
+    if (!player) {
+      return res.status(404).json({ error: "Player not found with provided keycard" });
+    }
+
+    return res.json(player); // Full data, including keycard
+  }
+
+  // Neither provided
+  return res.status(400).json({ error: "Either 'id' or 'keycard' must be provided" });
+});
+
+
+
+// GET: Create a new player (only requires ign)
+app.get("/createPlayer", (req, res) => {
+  const ign = req.query.ign;
+
+  if (!ign || ign.trim() === '') {
+    return res.status(400).json({ error: "IGN is required" });
+  }
+
+  const players = loadAllPlayers();
+
+  // Check if IGN already exists (case-insensitive)
+  const existingByIGN = players.find(p => p.ign.toLowerCase() === ign.toLowerCase());
+  if (existingByIGN) {
+    return res.status(409).json({ error: "IGN already in use" });
+  }
+
+  const uid = createUID();
+  const keycard = generateKeycard();
+
+  const playerData = {
+    uid,
+    keycard,
+    ign,
+    money: 0,
+    inventory: []
+  };
+
+  const filePath = path.join(DATABASE_DIR, `${uid}.json`);
+  fs.writeFileSync(filePath, JSON.stringify(playerData, null, 2));
+
+  res.redirect(`/getInfo/${uid}`);
+});
+
+// Start server
+app.listen(3000, () => {
+  console.log("Player API running at http://localhost:3000");
+});
+scheduleRestart();
