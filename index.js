@@ -3,15 +3,7 @@ const path = require('path');
 const express = require('express');
 const app = express();
 const { exec } = require('child_process');
-
-// Restart function
-function scheduleRestart() {
-  setTimeout(() => {
-    console.log("Restarting the app...");
-    exec('node index.js'); // Re-run the app
-    process.exit(); // Kill the current instance
-  }, 14 * 60 * 1000); // 14 minutes
-}
+const { job } = require('./database/cron.js')
 
 
 const DATABASE_DIR = path.join(__dirname, 'database', 'players');
@@ -131,4 +123,4 @@ app.get("/createPlayer", (req, res) => {
 app.listen(3000, () => {
   console.log("Player API running at http://localhost:3000");
 });
-scheduleRestart();
+job.start()
