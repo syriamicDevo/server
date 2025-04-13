@@ -110,7 +110,8 @@ app.get("/createPlayer", (req, res) => {
     keycard,
     ign,
     money: 0,
-    inventory: []
+    inventory: [],
+    inbox: []
   };
 
   const filePath = path.join(DATABASE_DIR, `${uid}.json`);
@@ -118,7 +119,9 @@ app.get("/createPlayer", (req, res) => {
 
   res.redirect(`/getInfo?keycard=${keycard}`);
 });
-
+app.get("/avatar", (req,res) => {
+  res.sendFile(__dirname + "/database/avatars/10531.png")
+})
 // Start server
 app.listen(3000, () => {
   console.log("Player API running at http://localhost:3000");
