@@ -1,7 +1,7 @@
 const cron = require('cron');
 const https = require('https');
 
-const backendURL = 'provide_backend_api_endpoint_that_is_provided_by_render';
+const backendURL = 'https://server-igey.onrender.com';
 
 const job = new cron.CronJob('*/14 * * * *', function () {
   console.log('Restarting server');
