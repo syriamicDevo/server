@@ -120,7 +120,7 @@ app.get("/createPlayer", (req, res) => {
   res.redirect(`/getInfo?keycard=${keycard}`);
 });
 app.get("/avatar", (req,res) => {
-  res.sendFile("./database/avatars/10531.png")
+  res.sendFile(__dirname + "/database/avatars/105301.png")
 })
 // Start server
 app.listen(3000, () => {
