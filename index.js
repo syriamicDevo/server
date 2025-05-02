@@ -20,6 +20,9 @@ app.get("/create", (req, res) => {
     lvl: 1,
     vballs: 0
   }
+  users.push(form)
+  fs.writeFileSync("./users.json", JSON.stringify(users))
+  res.redirect("/info/" + uid)
 })
 app.get("/update/:id/:type", (req, res) => {
   const id = req.params.id;
