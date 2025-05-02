@@ -36,5 +36,7 @@ app.get("/update/:id/:type", (req, res) => {
     res.status(404).json({ error: "User not found" });
   }
 })
-app.listen() 
+app.listen("3000", ()=> {
+  console.log("Running on port 3000")
+}) 
 job.start()
