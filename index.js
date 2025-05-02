@@ -1,8 +1,8 @@
 const express = require('express');
 const app = express();
 const fs = require("fs")
-const users = JSON.parse(fs.readFileSync("./database/users.json", "utf8"));
-const job = require('./database/cron').job;
+const users = JSON.parse(fs.readFileSync("./users.json", "utf8"));
+const job = require('./cron.js').job;
 app.get("/info/:id", (req, res) => {
   const id = req.params.id;
   const user = users.find(user => user.id == id);
