@@ -18,7 +18,8 @@ app.get("/create", (req, res) => {
     id: uid,
     playstyle: "Hinata",
     lvl: 1,
-    vballs: 0
+    vballs: 0,
+    verified: false
   }
   users.push(form)
   fs.writeFileSync("./users.json", JSON.stringify(users))
